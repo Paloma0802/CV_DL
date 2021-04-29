@@ -631,16 +631,16 @@ class ResNet(nn.Module):
 
     def forward(self, x):
         """Forward function."""
-        if self.deep_stem:
+        if self.deep_stem: # 按stem_layer的顺序进行传播
             x = self.stem(x)
         else:
             x = self.conv1(x)
             x = self.norm1(x)
             x = self.relu(x)
-        x = self.maxpool(x)
+        x = self.maxpool(x) # 再过一个maxpooling层
         outs = []
         for i, layer_name in enumerate(self.res_layers):
-            res_layer = getattr(self, layer_name)
+            res_layer = getattr(self, layer_name) # 然后经过一些reslayer？
             x = res_layer(x)
             if i in self.out_indices:
                 outs.append(x)

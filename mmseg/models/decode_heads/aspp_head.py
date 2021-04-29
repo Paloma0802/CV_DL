@@ -92,7 +92,7 @@ class ASPPHead(BaseDecodeHead):
 
     def forward(self, inputs):
         """Forward function."""
-        x = self._transform_inputs(inputs)
+        x = self._transform_inputs(inputs) # 对输入做初步的处理
         aspp_outs = [
             resize(
                 self.image_pool(x),
@@ -100,8 +100,8 @@ class ASPPHead(BaseDecodeHead):
                 mode='bilinear',
                 align_corners=self.align_corners)
         ]
-        aspp_outs.extend(self.aspp_modules(x))
-        aspp_outs = torch.cat(aspp_outs, dim=1)
-        output = self.bottleneck(aspp_outs)
-        output = self.cls_seg(output)
+        aspp_outs.extend(self.aspp_modules(x)) # aspp模块
+        aspp_outs = torch.cat(aspp_outs, dim=1) # concat到一起
+        output = self.bottleneck(aspp_outs) # short cut？
+        output = self.cls_seg(output)  # 可能是从base_decode head中继承过来的
         return output

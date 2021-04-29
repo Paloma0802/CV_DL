@@ -32,7 +32,7 @@ test_pipeline = [
         ])
 ]
 data = dict(
-    samples_per_gpu=2,
+    samples_per_gpu=3, #4会超出内存
     workers_per_gpu=2,
     train=dict(
         type=dataset_type,
@@ -49,6 +49,8 @@ data = dict(
     test=dict(
         type=dataset_type,
         data_root=data_root,
-        img_dir='leftImg8bit/val',
-        ann_dir='gtFine/val',
+        img_dir='leftImg8bit/test',
+        # img_dir='leftImg8bit/val',
+        ann_dir='gtFine/test',
+        # ann_dir='gtFine/val',
         pipeline=test_pipeline))
