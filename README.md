@@ -31,5 +31,5 @@ cuda 10.0
 
 训练：运行train.sh脚本。
 
-预测：运行inference.sh脚本。
+预测：运行test.sh脚本。
 
