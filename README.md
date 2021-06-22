@@ -1,4 +1,4 @@
-# vision-transformers-cifar10
+# Compare transformer and convolution module
 
 # Usage
 `python train_cifar10.py` # TransAndConv
