@@ -24,20 +24,21 @@ import pandas as pd
 import csv
 
 from models import *
-from models.vit import ViT
+from models.vit import ViT, TransAndConv
 from utils import progress_bar
+import time
 
 # parsers
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') # resnets.. 1e-3, Vit..1e-4?
+parser.add_argument('--lr', default=1e-4, type=float, help='learning rate') 
 parser.add_argument('--opt', default="adam")
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--aug', action='store_true', help='add image augumentations')
 parser.add_argument('--mixup', action='store_true', help='add mixup augumentations')
 parser.add_argument('--net', default='vit')
-parser.add_argument('--bs', default='64')
-parser.add_argument('--n_epochs', type=int, default='100')
-parser.add_argument('--patch', default='4', type=int)
+parser.add_argument('--bs', default='64', help = 'batch size')
+parser.add_argument('--n_epochs', type=int, default='100') 
+parser.add_argument('--patch', default='4', type=int) 
 parser.add_argument('--cos', action='store_true', help='Train with cosine annealing scheduling')
 args = parser.parse_args()
 
@@ -76,29 +77,12 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 # Model
 print('==> Building model..')
 # net = VGG('VGG19')
-if args.net=='res18':
-    net = ResNet18()
-elif args.net=='vgg':
-    net = VGG('VGG19')
-elif args.net=='res34':
-    net = ResNet34()
-elif args.net=='res50':
-    net = ResNet50()
-elif args.net=='res101':
-    net = ResNet101()
+if args.net == 'param':
+    net = Sameparam()
+elif args.net == 'flops':
+    net = Sameflops()
 elif args.net=="vit":
-    # ViT for cifar10
-    net = ViT(
-    image_size = 32,
-    patch_size = args.patch,
-    num_classes = 10,
-    dim = 512,
-    depth = 6,
-    heads = 8,
-    mlp_dim = 512,
-    dropout = 0.1,
-    emb_dropout = 0.1
-)
+    net = TransAndConv()
 
 net = net.to(device)
 if device == 'cuda':
@@ -116,6 +100,8 @@ if args.resume:
 
 # Loss is CE
 criterion = nn.CrossEntropyLoss()
+
+# optimizer
 # reduce LR on Plateau
 if args.opt == "adam":
     optimizer = optim.Adam(net.parameters(), lr=args.lr)
@@ -154,6 +140,9 @@ def train(epoch):
 
 ##### Validation
 import time
+
+time_stamp = time.strftime("%Y-%m-%d-%H:%M:%S", time.localtime()) 
+
 def test(epoch):
     global best_acc
     net.eval()
@@ -177,10 +166,10 @@ def test(epoch):
     # Update scheduler
     if not args.cos:
         scheduler.step(test_loss)
-    
+
     # Save checkpoint.
     acc = 100.*correct/total
-    if acc > best_acc:
+    if acc > best_acc:  # always save best model during training
         print('Saving..')
         state = {
             'net': net.state_dict(),
@@ -189,13 +178,13 @@ def test(epoch):
         }
         if not os.path.isdir('checkpoint'):
             os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/'+args.net+'-{}-ckpt.t7'.format(args.patch))
+        torch.save(state, './checkpoint/'+args.net+'-{}-{}-ckpt.t7'.format(args.patch, time_stamp))
         best_acc = acc
     
     os.makedirs("log", exist_ok=True)
     content = time.ctime() + ' ' + f'Epoch {epoch}, lr: {optimizer.param_groups[0]["lr"]:.7f}, val loss: {test_loss:.5f}, acc: {(acc):.5f}'
     print(content)
-    with open(f'log/log_{args.net}_patch{args.patch}.txt', 'a') as appender:
+    with open(f'log/log_{args.net}_patch{args.patch}_{time_stamp}.txt', 'a') as appender:
         appender.write(content + "\n")
     return test_loss, acc
 
@@ -212,7 +201,7 @@ for epoch in range(start_epoch, args.n_epochs):
     list_acc.append(acc)
     
     # write as csv for analysis
-    with open(f'log/log_{args.net}_patch{args.patch}.csv', 'w') as f:
+    with open(f'log/log_{args.net}_patch{args.patch}_{time_stamp}.csv', 'w') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerow(list_loss) 
         writer.writerow(list_acc) 
